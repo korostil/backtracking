@@ -6,6 +6,8 @@ python >3.7
 
 ###### Parameters:
 
+`--mehtod` 0 - Backtracking for directed cycles; 1 - Backtracking for undirected cycles; 2 - Backtracking 2.0 for directed cycles; 3 - Backtracking 2.0 for undirected cycles
+
 `--number` number of vertices
 
 `--path` path to the file with tests
