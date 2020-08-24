@@ -1,4 +1,5 @@
 import itertools
+import sys
 from datetime import datetime, timedelta
 
 import utils
@@ -346,9 +347,7 @@ def version_2(graphs: list, timeout: int = None):
 
     # increase recursion limit
     vertex_number = len(graphs[0][0])
-    if vertex_number > 2000:
-        import sys
-        sys.setrecursionlimit(vertex_number * 2)
+    sys.setrecursionlimit(vertex_number * 10)
 
     success_times, fail_times = [], []
     broken = 0
