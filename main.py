@@ -48,7 +48,7 @@ if __name__ == '__main__':
         print('Number of tests:', args.times)
     if args.path:
         print('Test graphs file:', args.path)
-    print('Time limit:', args.timeout + ' minutes' or '(with no limit)')
+    print('Time limit:', (args.timeout + ' minutes') if args.timeout else '(with no limit)')
 
     methods = list(map(int, args.method.split(',')))
     print('Methods:')
