@@ -1,2 +1,4 @@
+matplotlib==3.3.1
 prettytable==0.7.2
 pytest==5.3.2
+networkx==2.5

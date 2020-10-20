@@ -16,6 +16,8 @@ python >3.7
 
 `--timeout` runtime threshold for one test (in minutes)
 
+`--global-timeout` runtime threshold for all tests (in minutes)
+
 ###### Examples:
 
 `main.py --number=128 --method=1 --times=100`

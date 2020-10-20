@@ -1,95 +1,217 @@
+import sys
 from argparse import ArgumentParser
-from random import shuffle
+from datetime import datetime, timedelta
+from time import sleep
 
 from prettytable import PrettyTable
 
 import directed
+import exceptions
 import undirected
-from utils import import_from_file
+from utils import import_from_file, generate_random_graphs
 
-if __name__ == '__main__':
-    funcs = {
-        0: {
-            'func': directed.version_1,
-            'title': 'Backtracking for directed cycles'
-        },
-        1: {
-            'func': undirected.version_1,
-            'title': 'Backtracking for undirected cycles'
-        },
-        2: {
-            'func': directed.version_2,
-            'title': 'Backtracking 2.0 for directed cycles'
-        },
-        3: {
-            'func': undirected.version_2,
-            'title': 'Backtracking 2.0 for undirected cycles'
-        }
+funcs = {
+    0: {
+        'func': directed.simple_path,
+        'title': 'Simple path for directed cycles'
+    },
+    1: {
+        'func': undirected.simple_path,
+        'title': 'Simple path for undirected cycles'
+    },
+    2: {
+        'func': directed.chain_edge_fixing,
+        'title': 'Chain edge fixing for directed cycles'
+    },
+    3: {
+        'func': undirected.chain_edge_fixing,
+        'title': 'Chain edge fixing for undirected cycles'
     }
+}
+
+
+def parse_arguments() -> dict:
+    """
+
+    Returns:
+
+    """
 
     parser = ArgumentParser()
-    parser.add_argument("--number", dest="n", help="number of vertices")
-    parser.add_argument("--path", dest="path", help="path to the file with tests", default=None)
-    parser.add_argument("--times", dest="times", help="how many tests to run", default='100')
-    parser.add_argument("--timeout", dest="timeout", help="runtime threshold for one test (in minutes)")
+    parser.add_argument("--number", dest="n", help="Number of vertices")
+    parser.add_argument("--path", dest="path", help="Path(s) to the file(s) with tests")
+    parser.add_argument("--times", dest="times",
+                        help='How many tests to run (run that number of tests from "path" argument if it passed)')
+    parser.add_argument("--timeout", dest="timeout", help="Runtime threshold for one test (in minutes)")
+    parser.add_argument("--global-timeout", dest="global_timeout", help="Runtime threshold for all tests (in minutes)")
     parser.add_argument(
         "--method",
         dest="method",
-        help="0 - Backtracking for directed cycles; 1 - Backtracking for undirected cycles; 2 - Backtracking 2.0 for "
-             "directed cycles; 3 - Backtracking 2.0 for undirected cycles",
-        default='1'
+        help="Method(s) to run. By default runs all methods. 0 - Simple path for directed cycles; 1 - Simple path "
+             "for undirected cycles; 2 - Chain edge fixing for directed cycles; 3 - Chain edge fixing for "
+             "undirected cycles",
+        default='0,1,2,3'
     )
 
     args = parser.parse_args()
 
-    if args.n:
-        print('Number of vertices:', args.n)
-    if args.times:
-        print('Number of tests:', args.times)
-    if args.path:
-        print('Test graphs file:', args.path)
-    print('Time limit:', (args.timeout + ' minutes') if args.timeout else '(with no limit)')
-
-    methods = list(map(int, args.method.split(',')))
-    print('Methods:')
-    for method in methods:
-        print(' ' * 3, funcs[method]['title'])
-
-    if not args.n and not args.path:
-        print('Input error:', 'set parameter "--number" or "--path"! Run "main.py -h" to see the help.')
+    try:
+        if not args.n and not args.path:
+            raise exceptions.InputError(
+                'Set one of required parameter "--number" or "--path"! Run "main.py -h" to see the help.')
+    except exceptions.InputError as e:
+        print(e.message)
         exit()
-    elif not args.method:
-        print('Input error:', 'set parameter "--method"! Run "main.py -h" to see the help.')
-        exit()
-
-    if args.path:
-        test_graphs = []
-        for path in args.path.split(','):
-            test_graphs.append(import_from_file(path))
     else:
-        test_graphs = []
-        for n in list(map(int, args.n.split(','))):
-            graphs = []
-            vertices = list(range(1, n + 1))
-            for _ in range(int(args.times)):
-                pair = []
-                for _ in range(2):
-                    cp = vertices[:]
-                    shuffle(cp)
-                    pair.append(cp)
-                graphs.append(pair)
-            test_graphs.append(graphs)
+        arguments = {'methods': list(map(int, args.method.split(',')))}
 
-    timeout = int(args.timeout) if args.timeout else None
+        for key, value in [
+            ('n', args.n.split(',') if args.n else None), ('paths', args.path.split(',') if args.path else None),
+            ('times', args.times), ('timeout', args.timeout), ('global_timeout', args.global_timeout)
+        ]:
+            if value:
+                arguments[key] = value
+
+        return arguments
+
+
+def print_configuration(args: dict):
+    """
+
+    Args:
+        args:
+
+    Returns:
+
+    """
+
+    config_table = PrettyTable(['Parameter', 'Value'])
+    for row in [
+        ['Number of nodes', ', '.join(args['n']) if 'n' in args else '--'],
+        ['Number of tests', args['times'] if 'times' in args else '--'],
+        ['Single test time limit', (args['timeout'] + ' minute(s)') if 'timeout' in args else '(with no limit)'],
+        ['All tests time limit',
+         (args['global_timeout'] + ' minute(s)') if 'global_timeout' in args else '(with no limit)'],
+        ['Methods', '\n'.join(funcs[item]['title'] for item in args['methods'])],
+        ['Test graphs files', '\n'.join(item for item in args['paths'])]
+    ]:
+        config_table.add_row(row)
+
+    print(config_table)
+
+
+def handle_result(result, start_time, success_times: list, fail_times: list):
+    """
+
+    Args:
+        result:
+        start_time:
+        success_times:
+        fail_times:
+
+    Returns:
+
+    """
+
+    if result:
+        success_times.append(
+            (datetime.now() - start_time).microseconds + (datetime.now() - start_time).seconds * (10 ** 6))
+    else:
+        fail_times.append(
+            (datetime.now() - start_time).microseconds + (datetime.now() - start_time).seconds * (10 ** 6))
+
+
+if __name__ == '__main__':
+    configuration = parse_arguments()
+    print_configuration(configuration)
+
+    test_graphs = []
+    if 'paths' in configuration:
+        for path in configuration['paths']:
+            graph_pack = import_from_file(path)
+            if 'times' in configuration:
+                test_graphs.append(graph_pack[:int(configuration['times'])])
+            else:
+                test_graphs.append(graph_pack)
+    else:
+        generate_random_graphs(test_graphs, configuration)
+
+    timeout = int(configuration['timeout']) if 'timeout' in configuration else None
+    global_timeout = int(configuration['global_timeout']) if 'global_timeout' in configuration else None
 
     table = PrettyTable([
         'Vertex number', 'Method', 'Found', 'Found time (s)', 'Not found', 'Not found time (s)', 'Limit exceeded'
     ])
-    for graphs in test_graphs:
-        for method in methods:
-            limit_exceeded, found, found_time, not_found, not_found_time = funcs[method]['func'](graphs, timeout)
-            table.add_row([
-                len(graphs[0][0]), funcs[method]['title'], found, found_time, not_found, not_found_time, limit_exceeded
-            ])
+    try:
+        print()
+        print('-' * 30, 'STARTED', '-' * 30)
+        print()
+        for graphs in test_graphs:
+            vertex_number = len(graphs[0][0])
 
+            sys.setrecursionlimit(vertex_number * 10)
+
+            for method in configuration['methods']:
+                start_time_method = datetime.now()
+                success_times, fail_times = [], []
+                limit_exceeded = 0
+
+                tests_number = len(graphs)
+
+                for idx, (graph_x, graph_y) in enumerate(graphs, start=1):
+                    try:
+                        if len(graph_x) != len(graph_y):
+                            raise exceptions.InputGraphsLengthError(graph_x, graph_y)
+
+                        if graph_x == graph_y:
+                            raise exceptions.EqualInputGraphs(graph_x, graph_y)
+
+                        start_time = datetime.now()
+
+                        kwargs = {}
+                        if timeout:
+                            kwargs['timeout'] = (start_time, timeout)
+                        if global_timeout:
+                            kwargs['global_timeout'] = (start_time_method, global_timeout)
+
+                        result = funcs[method]['func'](graph_x, graph_y, **kwargs)
+                        handle_result(result, start_time, success_times, fail_times)
+                        if True or datetime.now() - start_time > timedelta(minutes=1):
+                            print(
+                                datetime.now(), funcs[method]['title'], 'on ' + str(len(graph_x)) + ' vertices', idx,
+                                '/', tests_number, 'passed'
+                            )
+                    except (exceptions.InputGraphsLengthError, exceptions.EqualInputGraphs) as e:
+                        print(e.message)
+                    except exceptions.SingleTestTimeoutExceeded as e:
+                        print(e.message)
+                        limit_exceeded += 1
+                    except exceptions.AllTestsTimeoutExceeded as e:
+                        print(e.message)
+                        break
+                    except KeyboardInterrupt:
+                        print(
+                            'The current test has been stopped. Press Ctrl+C in 5 seconds to stop process this method.')
+                        try:
+                            sleep(5)
+                        except KeyboardInterrupt:
+                            print('The current method has been stopped')
+                            break
+
+                found = len(success_times)
+                not_found = len(fail_times)
+                found_time = (sum(success_times) / found) if found else 0
+                not_found_time = (sum(fail_times) / not_found) if not_found else 0
+
+                table.add_row([
+                    vertex_number, funcs[method]['title'], found, round(found_time / 10 ** 6, 3), not_found,
+                    round(not_found_time / 10 ** 6, 3), limit_exceeded
+                ])
+                print('-' * 30, vertex_number, funcs[method]['title'].upper(), 'COMPLETED', '-' * 30)
+    except KeyboardInterrupt:
+        pass
+
+    print()
+    print('-' * 30, 'RESULTS', '-' * 30)
+    print()
     print(table)
