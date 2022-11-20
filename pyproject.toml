@@ -21,3 +21,8 @@ line_length = 88
 skip_glob = ["venv"]
 combine_as_imports = true
 combine_star = true
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
