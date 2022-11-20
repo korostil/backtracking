@@ -1,8 +1,9 @@
 import sys
 from argparse import ArgumentParser
-from datetime import datetime, timedelta
+from datetime import datetime
 from time import sleep
 
+import numpy
 from prettytable import PrettyTable
 
 import directed
@@ -157,8 +158,10 @@ if __name__ == '__main__':
             'Method',
             'Found',
             'Found time (s)',
+            'Found SD time (s)',
             'Not found',
             'Not found time (s)',
+            'Not found SD time (s)',
             'Limit exceeded',
         ]
     )
@@ -243,8 +246,10 @@ if __name__ == '__main__':
                         funcs[method]['title'],
                         found,
                         round(found_time / 10**6, 3),
+                        round(numpy.std(success_times) / 10**6, 3),
                         not_found,
                         round(not_found_time / 10**6, 3),
+                        round(numpy.std(fail_times) / 10**6, 3),
                         limit_exceeded,
                     ]
                 )
@@ -262,3 +267,4 @@ if __name__ == '__main__':
     print('-' * 30, 'RESULTS', '-' * 30)
     print()
     print(table)
+    print('SD - standard deviation')
