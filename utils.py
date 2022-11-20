@@ -1,7 +1,9 @@
 import itertools
 from collections import Counter
+from collections.abc import Iterable, Iterator
 from datetime import datetime, timedelta
 from random import shuffle
+from typing import Any, Callable, Union
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -12,7 +14,7 @@ plt.rcParams["figure.figsize"] = (12, 12)
 plt.axis('off')
 
 
-def get_pyramidal_cycles(number_of_vertices, number) -> list:
+def get_pyramidal_cycles(number_of_vertices: int, number: int) -> list:
     """Generates list of pyramidal cycles
 
     Args:
@@ -30,7 +32,10 @@ def get_pyramidal_cycles(number_of_vertices, number) -> list:
         shuffle(cycle_1)
         cycles.append(
             sorted(itertools.takewhile(lambda x: x < number_of_vertices, cycle_1))
-            + sorted(itertools.dropwhile(lambda x: x < number_of_vertices, cycle_1), reverse=True)
+            + sorted(
+                itertools.dropwhile(lambda x: x < number_of_vertices, cycle_1),
+                reverse=True,
+            )
         )
 
     return cycles
@@ -51,10 +56,9 @@ def import_from_file(path: str) -> list:
     for pair in open(path).read().split('\n\n'):
         if pair:
             x, y = pair.split('\n')
-            data_set.append((
-                tuple(map(int, x.strip().split())),
-                tuple(map(int, y.strip().split()))
-            ))
+            data_set.append(
+                (tuple(map(int, x.strip().split())), tuple(map(int, y.strip().split())))
+            )
 
     return data_set
 
@@ -71,12 +75,24 @@ def import_from_vns_file(path: str) -> list:
 
     data_set = []
 
-    data = open(path, 'r').readlines()
+    data = open(path).readlines()
     while True:
         try:
             data.pop(0)
-            x = data.pop(0).replace('	Initial Cycle 1: ', '').replace(',', ' ').strip().split()
-            y = data.pop(0).replace('	Initial Cycle 2: ', '').replace(',', ' ').strip().split()
+            x = (
+                data.pop(0)
+                .replace('	Initial Cycle 1: ', '')
+                .replace(',', ' ')
+                .strip()
+                .split()
+            )
+            y = (
+                data.pop(0)
+                .replace('	Initial Cycle 2: ', '')
+                .replace(',', ' ')
+                .strip()
+                .split()
+            )
             data_set.append([tuple(map(int, x)), tuple(map(int, tuple(y)))])
             for _ in range(8):
                 data.pop(0)
@@ -86,7 +102,7 @@ def import_from_vns_file(path: str) -> list:
     return data_set
 
 
-def chunk(it, n):
+def chunk(it: Iterable, n: int) -> Iterator[tuple[Any, ...]]:
     """Returns chunks of n elements each
 
     >>> list(chunk(range(10), 3))
@@ -106,7 +122,7 @@ def chunk(it, n):
     ]
     """
 
-    def _w(g):
+    def _w(g: Iterable) -> Callable[[], tuple[Any, ...]]:
         return lambda: tuple(itertools.islice(g, n))
 
     return iter(_w(iter(it)), ())
@@ -140,7 +156,7 @@ def find_vertices_with_multiedges(graph: dict, graph_type: bool) -> list:
     return result
 
 
-def get_different(items: set, excluded_item):
+def get_different(items: set, excluded_item: tuple) -> tuple:
     """Gets edge
 
     Args:
@@ -151,14 +167,15 @@ def get_different(items: set, excluded_item):
         Edge:
     """
 
-    return ((items - {excluded_item}) if len(items) > 1 else items).pop()
+    different: tuple = ((items - {excluded_item}) if len(items) > 1 else items).pop()
+    return different
 
 
 alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
-def generate_vertices(number_of_vertices):
-    vertices = []
+def generate_vertices(number_of_vertices: int) -> list:
+    vertices: list = []
     num_liter = 1
     index = 1
 
@@ -167,16 +184,16 @@ def generate_vertices(number_of_vertices):
             if index == len(alphabet):
                 num_liter += 1
                 index = 0
-            vertex = alphabet[index:index + num_liter]
+            vertex = alphabet[index : index + num_liter]
             if len(vertex) < num_liter:
-                vertex += alphabet[0:num_liter - len(vertex)]
+                vertex += alphabet[0 : num_liter - len(vertex)]
             vertices.append(vertex)
             index += 1
 
     return vertices
 
 
-def vertex_name_converter(name):
+def vertex_name_converter(name: Union[str, int]) -> str:
     if isinstance(name, int):
         col_str = ''
         while name:
@@ -191,26 +208,20 @@ def vertex_name_converter(name):
         expn = 0
         col_num = 0
         for char in reversed(name):
-            col_num += (ord(char) - ord('A') + 1) * (26 ** expn)
+            col_num += (ord(char) - ord('A') + 1) * (26**expn)
             expn += 1
-        return col_num
+        return str(col_num)
 
 
 def is_non_fixed_edge(edge: tuple) -> bool:
-    """
-
-    Args:
-        edge:
-
-    Returns:
-        bool: an attribute that edge is fixed or not in any of new cycles
-    """
+    """Returns an attribute that edge is fixed or not in any of new cycles"""
 
     return 'fixed_z' not in edge[3] and 'fixed_w' not in edge[3]
 
 
-def generate_random_graphs(target: list, arguments: dict):
-    """Generate random graphs by number(s) of vertices and how many tests to generate for every number
+def generate_random_graphs(target: list, arguments: dict) -> None:
+    """Generate random graphs by number(s) of vertices and
+    how many tests to generate for every number
 
     Args:
         target: list to append pairs of graphs
@@ -233,7 +244,7 @@ def generate_random_graphs(target: list, arguments: dict):
         target.append(graphs)
 
 
-def show(G):
+def show(G: nx.MultiGraph) -> None:
     pos = nx.circular_layout(G)
 
     nx.draw_networkx_nodes(G, pos, nodelist=G.nodes, **{"node_size": 500})
@@ -241,7 +252,9 @@ def show(G):
     z_edges, w_edges, multiedges, others = [], [], [], []
     for u, v in G.edges():
         if isinstance(G, nx.MultiGraph):
-            if 'fixed_z' in G.edges[u, v, 0] and any('fixed_w' in value for key, value in G[u][v].items()):
+            if 'fixed_z' in G.edges[u, v, 0] and any(
+                'fixed_w' in value for key, value in G[u][v].items()
+            ):
                 multiedges.append((u, v))
             elif 'fixed_z' in G.edges[u, v, 0]:
                 z_edges.append((u, v))
@@ -250,7 +263,9 @@ def show(G):
             else:
                 others.append((u, v))
         else:
-            if 'fixed_z' in G.edges[u, v] and any('fixed_w' in value for key, value in G[u][v].items()):
+            if 'fixed_z' in G.edges[u, v] and any(
+                'fixed_w' in value for key, value in G[u][v].items()
+            ):
                 multiedges.append((u, v))
             elif 'fixed_z' in G.edges[u, v]:
                 z_edges.append((u, v))
@@ -261,15 +276,19 @@ def show(G):
 
     nx.draw_networkx_edges(G, pos, edgelist=z_edges, alpha=0.8, edge_color="r", width=2)
     nx.draw_networkx_edges(G, pos, edgelist=w_edges, alpha=0.8, edge_color="b", width=2)
-    nx.draw_networkx_edges(G, pos, edgelist=multiedges, alpha=0.8, edge_color="#FF00FF", width=2)
-    nx.draw_networkx_edges(G, pos, edgelist=others, alpha=0.8, edge_color="#000000", width=2)
+    nx.draw_networkx_edges(
+        G, pos, edgelist=multiedges, alpha=0.8, edge_color="#FF00FF", width=2
+    )
+    nx.draw_networkx_edges(
+        G, pos, edgelist=others, alpha=0.8, edge_color="#000000", width=2
+    )
     nx.draw_networkx_labels(G, pos, {ver: ver for ver in G.nodes}, font_size=16)
 
     plt.show()
 
 
-def has_cycle(edges):
-    counter = {}
+def has_cycle(edges: Union[set, dict]) -> bool:
+    counter: dict = {}
 
     if isinstance(edges, set):
         for u, v in edges:
@@ -289,7 +308,7 @@ def has_cycle(edges):
     return False
 
 
-def is_hamiltonian_cycle(edges, directed: bool = True) -> bool:
+def is_hamiltonian_cycle(edges: set[tuple], directed: bool = True) -> bool:
     """Checks if the graph is a hamiltonian cycle
 
     Returns:
@@ -308,26 +327,37 @@ def is_hamiltonian_cycle(edges, directed: bool = True) -> bool:
     return False
 
 
-def timeout(method_name: str):
-    """
-
-    Args:
-        method_name:
-
-    Returns:
-
-    """
-
-    def decorator_timeout(func):
-        def wrapper(*args, **kwargs):
-            if 'timeout' in kwargs and kwargs['timeout'] and \
-                    datetime.now() - kwargs['timeout'][0] > timedelta(minutes=kwargs['timeout'][1]):
+def timeout(method_name: str) -> Callable:
+    def decorator_timeout(func):  # type: ignore
+        def wrapper(*args, **kwargs):  # type: ignore
+            if (
+                'timeout' in kwargs
+                and kwargs['timeout']
+                and datetime.now() - kwargs['timeout'][0]
+                > timedelta(minutes=kwargs['timeout'][1])
+            ):
                 raise exceptions.SingleTestTimeoutExceeded(
-                    ' '.join([str(datetime.now()), method_name + ': single test timeout exceeded!']))
-            if 'global_timeout' in kwargs and kwargs['global_timeout'] and \
-                    datetime.now() - kwargs['global_timeout'][0] > timedelta(minutes=kwargs['global_timeout'][1]):
+                    ' '.join(
+                        [
+                            str(datetime.now()),
+                            method_name + ': single test timeout exceeded!',
+                        ]
+                    )
+                )
+            if (
+                'global_timeout' in kwargs
+                and kwargs['global_timeout']
+                and datetime.now() - kwargs['global_timeout'][0]
+                > timedelta(minutes=kwargs['global_timeout'][1])
+            ):
                 raise exceptions.AllTestsTimeoutExceeded(
-                    ' '.join([str(datetime.now()), method_name + ': all tests timeout exceeded!']))
+                    ' '.join(
+                        [
+                            str(datetime.now()),
+                            method_name + ': all tests timeout exceeded!',
+                        ]
+                    )
+                )
             return func(*args, **kwargs)
 
         return wrapper
@@ -335,20 +365,14 @@ def timeout(method_name: str):
     return decorator_timeout
 
 
-def fix_multiedges(multigraph):
-    """
-
-    Args:
-        multigraph:
-
-    Returns:
-
-    """
-
+def fix_multiedges(multigraph: nx.MultiGraph) -> None:
     if isinstance(multigraph, nx.MultiDiGraph):
         for node in filter(
-                lambda x: len(set(multigraph.neighbors(x)) | set(multigraph.predecessors(x))) < 4,
-                multigraph.nodes
+            lambda x: len(
+                set(multigraph.neighbors(x)) | set(multigraph.predecessors(x))
+            )
+            < 4,
+            multigraph.nodes,
         ):
             edges = list(multigraph.in_edges(node)) + list(multigraph.edges(node))
             for u, v in set(edges):
@@ -356,27 +380,21 @@ def fix_multiedges(multigraph):
                     multigraph.edges[u, v, 0]['fixed_z'] = True
                     multigraph.edges[u, v, 1]['fixed_w'] = True
     else:
-        for node in filter(lambda x: len(set(multigraph.neighbors(x))) < 4, multigraph.nodes):
+        for node in filter(
+            lambda x: len(set(multigraph.neighbors(x))) < 4, multigraph.nodes
+        ):
             for u, v in multigraph.edges(node):
-                if multigraph.number_of_edges(u, v) == 2 and not multigraph.edges[u, v, 0]:
+                if (
+                    multigraph.number_of_edges(u, v) == 2
+                    and not multigraph.edges[u, v, 0]
+                ):
                     multigraph.edges[u, v, 0]['fixed_z'] = True
                     multigraph.edges[u, v, 1]['fixed_w'] = True
 
 
-def fix_edge(multigraph, edge: tuple, in_z: bool, fixed_in_z: set, fixed_in_w: set):
-    """
-
-    Args:
-        multigraph:
-        edge:
-        in_z:
-        fixed_in_z:
-        fixed_in_w:
-
-    Returns:
-
-    """
-
+def fix_edge(
+    multigraph: nx.MultiGraph, edge: tuple, in_z: bool, fixed_in_z: set, fixed_in_w: set
+) -> None:
     u, v = edge
     if in_z:
         fixed_in_z.add(edge)
@@ -391,12 +409,20 @@ def fix_edge(multigraph, edge: tuple, in_z: bool, fixed_in_z: set, fixed_in_w: s
     if isinstance(multigraph, nx.MultiDiGraph):
         for next_fixed_edge in [
             get_different(set(multigraph.edges(u)), edge),
-            get_different(set(multigraph.in_edges(v)), edge)
+            get_different(set(multigraph.in_edges(v)), edge),
         ]:
-            fixed = 'fixed_z' in multigraph[next_fixed_edge[0]][next_fixed_edge[1]][0] or 'fixed_w' in \
-                    multigraph[next_fixed_edge[0]][next_fixed_edge[1]][0]
+            fixed = (
+                'fixed_z' in multigraph[next_fixed_edge[0]][next_fixed_edge[1]][0]
+                or 'fixed_w' in multigraph[next_fixed_edge[0]][next_fixed_edge[1]][0]
+            )
             if not fixed:
-                fix_edge(multigraph, edge=next_fixed_edge, in_z=not in_z, fixed_in_z=fixed_in_z, fixed_in_w=fixed_in_w)
+                fix_edge(
+                    multigraph,
+                    edge=next_fixed_edge,
+                    in_z=not in_z,
+                    fixed_in_z=fixed_in_z,
+                    fixed_in_w=fixed_in_w,
+                )
     else:
         for node in edge:
             fixed_z, fixed_w = 0, 0
@@ -410,11 +436,16 @@ def fix_edge(multigraph, edge: tuple, in_z: bool, fixed_in_z: set, fixed_in_w: s
             if fixed_z + fixed_w != 4:
                 if fixed_z == 2 or fixed_w == 2:
                     for free_edge in filter(
-                            lambda x: all(
-                                'fixed_z' not in value and 'fixed_w' not in value
-                                for key, value in multigraph[x[0]][x[1]].items()
-                            ),
-                            multigraph.edges(node)
+                        lambda x: all(
+                            'fixed_z' not in value and 'fixed_w' not in value
+                            for key, value in multigraph[x[0]][x[1]].items()
+                        ),
+                        multigraph.edges(node),
                     ):
-                        fix_edge(multigraph, edge=free_edge, in_z=True if fixed_w == 2 else False,
-                                 fixed_in_z=fixed_in_z, fixed_in_w=fixed_in_w)
+                        fix_edge(
+                            multigraph,
+                            edge=free_edge,
+                            in_z=True if fixed_w == 2 else False,
+                            fixed_in_z=fixed_in_z,
+                            fixed_in_w=fixed_in_w,
+                        )
