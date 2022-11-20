@@ -93,7 +93,7 @@ def print_configuration(args: dict):
         ['All tests time limit',
          (args['global_timeout'] + ' minute(s)') if 'global_timeout' in args else '(with no limit)'],
         ['Methods', '\n'.join(funcs[item]['title'] for item in args['methods'])],
-        ['Test graphs files', '\n'.join(item for item in args['paths'])]
+        ['Test graphs files', '\n'.join(item for item in args['paths']) if 'paths' in args else '(random graphs)']
     ]:
         config_table.add_row(row)
 
