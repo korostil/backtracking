@@ -212,9 +212,7 @@ if __name__ == '__main__':
                         result = funcs[method]['func'](graph_x, graph_y, **kwargs)
                         handle_result(result, start_time, success_times, fail_times)
 
-                        if progress and (
-                            datetime.now() - start_time > timedelta(minutes=1)
-                        ):
+                        if progress:
                             print(
                                 datetime.now(),
                                 funcs[method]['title'],
