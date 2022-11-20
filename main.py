@@ -259,8 +259,8 @@ if __name__ == '__main__':
                             round(numpy.std(success_times) / 10**6, 3)
                             if success_times
                             else 0,
-                            not_found,
                         ),
+                        not_found,
                         round(not_found_time / 10**6, 3),
                         round(numpy.std(fail_times) / 10**6, 3) if fail_times else 0,
                         limit_exceeded,
