@@ -1,0 +1,15 @@
+[flake8]
+exclude =
+    .git,
+    venv,
+    .venv,
+    .mypy_cache,
+    .pytest_cache,
+    data,
+
+max-line-length = 88
+ignore =
+	# line break before binary operator
+	W503,
+	# whitespace before ':' (compatibility with black)
+	E203
