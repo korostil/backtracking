@@ -1,6 +1,6 @@
 import sys
 from argparse import ArgumentParser
-from datetime import datetime, timedelta
+from datetime import datetime
 from time import sleep
 
 import numpy
@@ -255,10 +255,14 @@ if __name__ == '__main__':
                         funcs[method]['title'],
                         found,
                         round(found_time / 10**6, 3),
-                        round(numpy.std(success_times) / 10**6, 3),
-                        not_found,
+                        (
+                            round(numpy.std(success_times) / 10**6, 3)
+                            if success_times
+                            else 0,
+                            not_found,
+                        ),
                         round(not_found_time / 10**6, 3),
-                        round(numpy.std(fail_times) / 10**6, 3),
+                        round(numpy.std(fail_times) / 10**6, 3) if fail_times else 0,
                         limit_exceeded,
                     ]
                 )
