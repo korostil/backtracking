@@ -1,6 +1,6 @@
 import sys
 from argparse import ArgumentParser
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
 
 import numpy
@@ -57,6 +57,12 @@ def parse_arguments() -> dict:
         ),
         default='0,1,2,3',
     )
+    parser.add_argument(
+        "--progress",
+        dest="progress",
+        help="Show intermediate progress (enabled by default)",
+        default='true',
+    )
 
     args = parser.parse_args()
 
@@ -78,6 +84,7 @@ def parse_arguments() -> dict:
             ('times', args.times),
             ('timeout', args.timeout),
             ('global_timeout', args.global_timeout),
+            ('progress', args.progress),
         ]:
             if value:
                 arguments[key] = value
@@ -151,6 +158,7 @@ if __name__ == '__main__':
         if 'global_timeout' in configuration
         else None
     )
+    progress = configuration['progress'] in ('True', 'true', 't')
 
     table = PrettyTable(
         [
@@ -204,15 +212,18 @@ if __name__ == '__main__':
                         result = funcs[method]['func'](graph_x, graph_y, **kwargs)
                         handle_result(result, start_time, success_times, fail_times)
 
-                        print(
-                            datetime.now(),
-                            funcs[method]['title'],
-                            'on ' + str(len(graph_x)) + ' vertices',
-                            idx,
-                            '/',
-                            tests_number,
-                            'passed',
-                        )
+                        if progress and (
+                            datetime.now() - start_time > timedelta(minutes=1)
+                        ):
+                            print(
+                                datetime.now(),
+                                funcs[method]['title'],
+                                'on ' + str(len(graph_x)) + ' vertices',
+                                idx,
+                                '/',
+                                tests_number,
+                                'passed',
+                            )
                     except (
                         exceptions.InputGraphsLengthError,
                         exceptions.EqualInputGraphs,
