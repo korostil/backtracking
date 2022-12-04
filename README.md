@@ -6,7 +6,11 @@ python >3.7
 
 ###### Parameters:
 
-`--mehtod` 0 - Backtracking for directed cycles; 1 - Backtracking for undirected cycles; 2 - Backtracking 2.0 for directed cycles; 3 - Backtracking 2.0 for undirected cycles
+`--mehtod` which method to use:
+- `0` - Backtracking for directed cycles; 
+- `1` - Backtracking for undirected cycles; 
+- `2` - Backtracking 2.0 for directed cycles; 
+- `3` - Backtracking 2.0 for undirected cycles
 
 `--number` number of vertices
 
@@ -18,9 +22,11 @@ python >3.7
 
 `--global-timeout` runtime threshold for all tests (in minutes)
 
+`--progress` show(hide) intermediate progress (shown by default)
+
 ###### Examples:
 
-`python main.py --number=128 --method=1 --times=100`
+`python main.py --number=128 --method=1 --times=100 --progress=false`
 
 `python main.py --number=32,40,48 --method=1,3 --times=100`
 
